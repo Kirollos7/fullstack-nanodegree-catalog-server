@@ -2,7 +2,8 @@
 
 This document describes how my [Python/Flask + PostgreSQL project](https://github.com/miguelrincon/fullstack-nanodegree-catalog) was setup AWS Ubuntu Server.
 
-It aims to fullfill the **Linux Server Configuration** project rubric in: 
+It aims to fulfill the **Linux Server Configuration** project rubric in: 
+
 https://review.udacity.com/#!/rubrics/2007/view
 
 ## Server location
@@ -39,35 +40,72 @@ Initially I could not install using apt-get, So I had to update the `sources.lis
 sudo sed -i 's/us-east-1\.ec2\.//g' /etc/apt/sources.list
 ```
 
-After this, I installed apache2, python3, ...
+After this, I installed the needed tools, Apache2, PostgreSQL
+```
+sudo apt-get update
+sudo apt-get install apache2
+sudo apt-get install python-pip3
+sudo apt-get install postgresql
+sudo apt-get upgrade
+sudo apt-get autoremove
+```
 
 2) Configuration of SSH and UFW firewall to allow traffic over SSH.
 
-2) Git clone the catalog project.
+```
+sudo ufw status
+sudo ufw default deny incoming
+sudo ufw default allow outgoing
+sudo ufw allow 2200/tcp
+sudo ufw allow www
+sudo ufw allow ntp
+sudo ufw enable
+```
+
+3) `git clone` the catalog project.
 
 I got the project source code. Installed dependencies using requirements.txt.
 
-3) Configuration of apache
+```
+pip3 install -r requirements.txt
+```
 
-Change the permisssions of /var/html/www directory.
+4) Configuration of apache
 
-4) I configured the PostgreSQL user: `catalog` and its permissions
+Change the permissions of /var/html/www directory.
 
-5) I tried to run the database migration! Some trial and error was required to make the original code work:
+Update the Apache2 sites file: `sites-enabled/000-default.conf`
 
-- I changed paths to config files setup as absolute. WSGI doesn't understand the project location.
+```conf
+WSGIPythonPath /var/www/html/catalog/
 
+<VirtualHost *:80>
+        # ...
+        WSGIScriptAlias / /var/www/html/catalog/application.wsgi
+</VirtualHost>
+```
+5) I configured the PostgreSQL user: `catalog` and its permissions
 
-6) Run the project (a bit more trial and error)
+6) I tried to run the database migration! Some trial and error was required to make the original code work:
 
-- Created of an additional `.wsgi` file which returns an `application` variable to be able to run the project.
-- Update my Github App (used for OAuth) parameters, most importanlty, the URL of the application.
+I changed paths to config files setup as absolute. WSGI doesn't understand the project location.
+
+7) Run the project (a bit more trial and error)
+
+Created of an additional `.wsgi` file which returns an `application` variable to be able to run the project.
+
+Update my Github App (used for OAuth) parameters, most importantly, the URL of the application.
+
+```
+sudo apt-get install apache2-dev
+sudo pip3 install mod_wsgi
+```
 
 ## List of third-party resources and documentation
 
 The part that gave me most trouble during setup was the WSGI + Apache configuration on Python 3.
 
-- The [mod_wsgi documentation](https://modwsgi.readthedocs.io/en/develop/configuration.html) allowed me to undestand the background of wsgi and it's configuration parameters.
+- The [mod_wsgi documentation](https://modwsgi.readthedocs.io/en/develop/configuration.html) allowed me to understand the background of wsgi and it's configuration parameters.
 - The [Pip mod_wsgi](https://pypi.org/project/mod_wsgi/) installation instructions helped me install WSGI without having to compile a new wsgi for my version of Python (3.6).
 - [This SO answer](https://stackoverflow.com/a/31564325/777539) gave me the clue that WSGI installation had to be done differently for Python 3 than the default instructions.
 
